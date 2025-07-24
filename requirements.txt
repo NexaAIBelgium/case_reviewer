@@ -1,6 +1,12 @@
-streamlit
-google-generativeai
-Pillow
-pypdf2
-python-docx
-pandas
+# Core dependencies
+streamlit>=1.28.0
+google-generativeai>=0.3.0
+python-dotenv>=1.0.0
+
+# PDF processing
+PyPDF2>=3.0.0
+pdf2image>=1.16.0
+Pillow>=10.0.0
+
+# Optional but recommended
+streamlit-extras>=0.3.0
