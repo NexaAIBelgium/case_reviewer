@@ -15,12 +15,30 @@ from pathlib import Path
 import google.generativeai as genai
 import time
 from io import StringIO, BytesIO
-import pandas as pd
 import base64
-from PIL import Image
-import PyPDF2
-import docx
 import re
+
+# Try imports met fallbacks
+try:
+    import pandas as pd
+except ImportError:
+    pd = None
+    st.warning("Pandas niet beschikbaar")
+
+try:
+    from PIL import Image
+except ImportError:
+    Image = None
+    st.warning("PIL niet beschikbaar")
+
+try:
+    import pypdf2 as PyPDF2
+except ImportError:
+    try:
+        import PyPDF2
+    except ImportError:
+        PyPDF2 = None
+        st.warning("PyPDF2 niet beschikbaar - PDF verwerking beperkt")
 
 # Pagina configuratie
 st.set_page_config(
@@ -123,6 +141,9 @@ def extract_text_from_pdf(pdf_file) -> tuple[str, List[Dict]]:
     text = ""
     images_info = []
     
+    if PyPDF2 is None:
+        return "PDF verwerking niet beschikbaar - upload als afbeelding voor OCR", images_info
+    
     try:
         pdf_reader = PyPDF2.PdfReader(pdf_file)
         
@@ -143,6 +164,7 @@ def extract_text_from_pdf(pdf_file) -> tuple[str, List[Dict]]:
                         })
     except Exception as e:
         st.error(f"Fout bij PDF verwerking: {str(e)}")
+        text = "Fout bij PDF verwerking - probeer het bestand als afbeelding te uploaden"
         
     return text, images_info
 
@@ -150,6 +172,9 @@ def extract_text_from_docx(docx_file) -> tuple[str, List[Dict]]:
     """Extract tekst en detecteer afbeeldingen in DOCX"""
     text = ""
     images_info = []
+    
+    if docx is None:
+        return "DOCX verwerking niet beschikbaar - converteer naar PDF of upload als afbeelding", images_info
     
     try:
         doc = docx.Document(docx_file)
@@ -167,11 +192,15 @@ def extract_text_from_docx(docx_file) -> tuple[str, List[Dict]]:
                 
     except Exception as e:
         st.error(f"Fout bij DOCX verwerking: {str(e)}")
+        text = "Fout bij DOCX verwerking - probeer het bestand als PDF of afbeelding"
         
     return text, images_info
 
 def process_image_with_gemini(image_bytes: bytes, context: str = "") -> str:
     """Verwerk afbeelding met Gemini Vision voor OCR en beschrijving"""
+    if Image is None:
+        return "PIL niet beschikbaar voor beeldverwerking"
+        
     try:
         model = genai.GenerativeModel(VISION_MODEL)
         
